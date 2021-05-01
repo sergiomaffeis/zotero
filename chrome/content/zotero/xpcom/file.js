@@ -778,23 +778,25 @@ Zotero.File = new function(){
 	
 	
 	/**
-	 * Generate a data: URI from an nsIFile
+	 * Generate a data: URI from a file path
 	 *
-	 * From https://developer.mozilla.org/en-US/docs/data_URIs
+	 * @param {String} path
+	 * @param {String} contentType
 	 */
-	this.generateDataURI = function (file) {
-		var contentType = Components.classes["@mozilla.org/mime;1"]
-			.getService(Components.interfaces.nsIMIMEService)
-			.getTypeFromFile(file);
-		var inputStream = Components.classes["@mozilla.org/network/file-input-stream;1"]
-			.createInstance(Components.interfaces.nsIFileInputStream);
-		inputStream.init(file, 0x01, 0o600, 0);
-		var stream = Components.classes["@mozilla.org/binaryinputstream;1"]
-			.createInstance(Components.interfaces.nsIBinaryInputStream);
-		stream.setInputStream(inputStream);
-		var encoded = btoa(stream.readBytes(stream.available()));
-		return "data:" + contentType + ";base64," + encoded;
-	}
+	this.generateDataURI = async function (file, contentType) {
+		if (!contentType) {
+			throw new Error("contentType not provided");
+		}
+		
+		var buf = await OS.File.read(file, {});
+		var bytes = new Uint8Array(buf);
+		var binary = '';
+		var len = bytes.byteLength;
+		for (let i = 0; i < len; i++) {
+			binary += String.fromCharCode(bytes[i]);
+		}
+		return 'data:' + contentType + ';base64,' + btoa(binary);
+	};
 	
 	
 	this.setNormalFilePermissions = function (file) {
@@ -976,32 +978,72 @@ Zotero.File = new function(){
 		});
 		
 		return this.iterateDirectory(source, function (entry) {
-			return OS.File.copy(entry.path, OS.Path.join(target, entry.name));
-		})
+			return entry.isDir
+				? this.copyDirectory(entry.path, OS.Path.join(target, entry.name))
+				: OS.File.copy(entry.path, OS.Path.join(target, entry.name));
+		}.bind(this))
 	});
 	
 	
 	this.createDirectoryIfMissing = function (dir) {
 		dir = this.pathToFile(dir);
 		if (!dir.exists() || !dir.isDirectory()) {
-			if (dir.exists() && !dir.isDirectory()) {
-				dir.remove(null);
+			if (dir.exists()) {
+				if (!dir.isDirectory()) {
+					dir.remove(null);
+				}
+			}
+			else {
+				let isSymlink = false;
+				// isSymlink() fails if the directory doesn't exist, but is true if it's a broken
+				// symlink, in which case exists() returns false
+				try {
+					isSymlink = dir.isSymlink();
+				}
+				catch (e) {}
+				if (isSymlink) {
+					throw new Error(`Broken symlink at ${dir.path}`);
+				}
 			}
 			dir.create(Components.interfaces.nsIFile.DIRECTORY_TYPE, 0o755);
 		}
 	}
 	
 	
-	this.createDirectoryIfMissingAsync = function (path) {
-		return Zotero.Promise.resolve(
-			OS.File.makeDir(
+	this.createDirectoryIfMissingAsync = async function (path, options = {}) {
+		try {
+			await OS.File.makeDir(
 				path,
-				{
-					ignoreExisting: true,
-					unixMode: 0o755
-				}
+				Object.assign(
+					{
+						ignoreExisting: false,
+						unixMode: 0o755
+					},
+					options
+				)
 			)
-		);
+		}
+		catch (e) {
+			// If there's a broken symlink at the given path, makeDir() will throw becauseExists,
+			// but exists() will return false
+			if (e.becauseExists) {
+				if (await OS.File.exists(path)) {
+					return;
+				}
+				let isSymlink = false;
+				// Confirm with nsIFile that it's a symlink
+				try {
+					isSymlink = this.pathToFile(path).isSymlink();
+				}
+				catch (e) {
+					Zotero.logError(e);
+				}
+				if (isSymlink) {
+					throw new Error(`Broken symlink at ${path}`);
+				}
+			}
+			throw e;
+		}
 	}
 	
 	
@@ -1356,7 +1398,9 @@ Zotero.File = new function(){
 			// pCloud
 			|| path.toLowerCase().includes('pcloud')
 			// iCloud Drive (~/Library/Mobile Documents/com~apple~CloudDocs)
-			|| path.includes('Mobile Documents');
+			|| path.includes('Mobile Documents')
+			// Box
+			|| path.includes('Box');
 	};
 	
 	

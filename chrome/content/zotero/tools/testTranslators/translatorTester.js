@@ -24,7 +24,7 @@
 */
 
 // Timeout for test to complete
-var TEST_RUN_TIMEOUT = 60000;
+var TEST_RUN_TIMEOUT = 15000;
 var EXPORTED_SYMBOLS = ["Zotero_TranslatorTesters"];
 
 // For debugging specific translators by label
@@ -256,6 +256,8 @@ Zotero_TranslatorTester._sanitizeItem = function(item, testItem, keepValidFields
 			var attachment = item.attachments[i];
 			if(attachment.document) {
 				delete attachment.document;
+				// Mirror connector/server itemDone() behavior from translate.js
+				attachment.mimeType = 'text/html';
 			}
 			
 			if(attachment.url) {
@@ -423,6 +425,9 @@ Zotero_TranslatorTester.prototype.fetchPageAndRunTest = function (test, testDone
 						+ " second(s) for page content to settle");
 				}
 				setTimeout(() => {
+					// Use cookies from document in translator HTTP requests
+					this._cookieSandbox = new Zotero.CookieSandbox(null, test.url, doc.cookie);
+					
 					this.runTest(test, doc, function (obj, test, status, message) {
 						Zotero.Browser.deleteHiddenBrowser(browser);
 						testDoneCallback(obj, test, status, message);
@@ -637,6 +642,14 @@ Zotero_TranslatorTester.prototype.newTest = function(doc, testReadyCallback) {
 		translate.setTranslatorProvider(this.translatorProvider);
 	}
 	translate.setDocument(doc);
+	// Use cookies from document
+	if (doc.cookie) {
+		translate.setCookieSandbox(new Zotero.CookieSandbox(
+			null,
+			doc.location.href,
+			doc.cookie
+		));
+	}
 	translate.setTranslator(this.translator);
 	translate.setHandler("debug", this._debug);
 	translate.setHandler("select", function(obj, items, callback) {

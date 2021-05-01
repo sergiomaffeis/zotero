@@ -2,6 +2,9 @@
   "general_more": {
     "message": "Dodatno ..."
   },
+  "general_moreInfo": {
+    "message": "Podrobnosti ..."
+  },
   "general_done": {
     "message": "Opravljeno"
   },
@@ -16,6 +19,9 @@
   },
   "general_pleaseWait": {
     "message": "Počakajte trenutek ..."
+  },
+  "general_copyToClipboard": {
+    "message": "Kopiraj na odložišče"
   },
   "progressWindow_savingTo": {
     "message": "Shranjevanje v"
@@ -56,6 +62,9 @@
   "error_connection_enableSavingToOnlineLibrary": {
     "message": "Omogoči shranjevanje v spletno knjižnico"
   },
+  "reports_debug_output_submitted": {
+    "message": "Vaš izhod razhroščevanja je bil poslan.\n\nID razhroščevanja je $1."
+  },
   "integration_error_clientUpgrade": {
     "message": "Citiranje prek spleta zahteva $1 ali novejšega."
   },
@@ -73,6 +82,9 @@
   },
   "integration_googleDocs_updating": {
     "message": "$1 posodablja vaš dokument."
+  },
+  "integration_googleDocs_docxAlert": {
+    "message": "Integracija $1 ni na voljo pri neposrednem urejanju datotek Microsoft Word .docx v Google Docs. Izberite Datoteka → Shrani kot Google Docs, da omogočite to funkcionalnost.<br/><br/>Če želite prenesti dokument Word s citati $1 v Google Docs, glejte <a href=\"https://www.zotero.org/support/kb/moving_documents_between_word_processors\">Prenašanje dokumentov med urejevalniki besedil</a>."
   },
   "general_saveTo": {
     "message": "Shrani v $1"

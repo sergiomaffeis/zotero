@@ -37,7 +37,10 @@ Zotero.DBConnection = function(dbNameOrPath) {
 	}
 	
 	this.MAX_BOUND_PARAMETERS = 999;
-	this.DB_CORRUPTION_STRING = "database disk image is malformed";
+	this.DB_CORRUPTION_STRINGS = [
+		"database disk image is malformed",
+		"2152857611"
+	];
 	
 	Components.utils.import("resource://gre/modules/Sqlite.jsm", this);
 	
@@ -701,7 +704,13 @@ Zotero.DBConnection.prototype.valueQueryAsync = Zotero.Promise.coroutine(functio
 		if (Zotero.Debug.enabled) {
 			this.logQuery(sql, params, options);
 		}
-		let rows = yield conn.executeCached(sql, params);
+		let rows;
+		if (options && options.noCache) {
+			rows = yield conn.execute(sql, params);
+		}
+		else {
+			rows = yield conn.executeCached(sql, params);
+		}
 		return rows.length ? rows[0].getResultByIndex(0) : false;
 	}
 	catch (e) {
@@ -744,7 +753,13 @@ Zotero.DBConnection.prototype.columnQueryAsync = Zotero.Promise.coroutine(functi
 		if (Zotero.Debug.enabled) {
 			this.logQuery(sql, params, options);
 		}
-		let rows = yield conn.executeCached(sql, params);
+		let rows;
+		if (options && options.noCache) {
+			rows = yield conn.execute(sql, params);
+		}
+		else {
+			rows = yield conn.executeCached(sql, params);
+		}
 		var column = [];
 		for (let i=0, len=rows.length; i<len; i++) {
 			column.push(rows[i].getResultByIndex(0));
@@ -796,12 +811,23 @@ Zotero.DBConnection.prototype.tableExists = Zotero.Promise.coroutine(function* (
 });
 
 
-/**
- * Parse SQL string and execute transaction with all statements
- *
- * @return {Promise}
- */
-Zotero.DBConnection.prototype.executeSQLFile = Zotero.Promise.coroutine(function* (sql) {
+Zotero.DBConnection.prototype.columnExists = async function (table, column) {
+	await this._getConnectionAsync();
+	var sql = `SELECT COUNT(*) FROM pragma_table_info(?) WHERE name=?`;
+	var count = await this.valueQueryAsync(sql, [table, column]);
+	return !!count;
+};
+
+
+Zotero.DBConnection.prototype.indexExists = async function (index, db) {
+	await this._getConnectionAsync();
+	var prefix = db ? db + '.' : '';
+	var sql = `SELECT COUNT(*) FROM ${prefix}sqlite_master WHERE type='index' AND name=?`;
+	return !!await this.valueQueryAsync(sql, [index]);
+};
+
+
+Zotero.DBConnection.prototype.parseSQLFile = function (sql) {
 	var nonCommentRE = /^[^-]/;
 	var trailingCommentRE = /^(.*?)(?:--.+)?$/;
 	
@@ -819,13 +845,23 @@ Zotero.DBConnection.prototype.executeSQLFile = Zotero.Promise.coroutine(function
 	var statements = sql.split(";")
 		.map(x => x.replace(/TEMPSEMI/g, ";"));
 	
+	return statements;
+};
+
+
+/**
+ * Parse SQL string and execute transaction with all statements
+ *
+ * @return {Promise}
+ */
+Zotero.DBConnection.prototype.executeSQLFile = async function (sql) {
 	this.requireTransaction();
-	
+	var statements = this.parseSQLFile(sql);
 	var statement;
 	while (statement = statements.shift()) {
-		yield this.queryAsync(statement);
+		await this.queryAsync(statement);
 	}
-});
+};
 
 
 /*
@@ -838,6 +874,16 @@ Zotero.DBConnection.prototype.observe = function(subject, topic, data) {
 			break;
 	}
 }
+
+
+Zotero.DBConnection.prototype.numCachedStatements = function () {
+	return this._connection._connectionData._cachedStatements.size;
+};
+
+
+Zotero.DBConnection.prototype.getCachedStatements = function () {
+	return [...this._connection._connectionData._cachedStatements].map(x => x[0]);
+};
 
 
 // TEMP
@@ -857,14 +903,20 @@ Zotero.DBConnection.prototype.info = Zotero.Promise.coroutine(function* () {
 });
 
 
+Zotero.DBConnection.prototype.quickCheck = async function () {
+	var ok = await this.valueQueryAsync("PRAGMA quick_check(1)");
+	return ok == 'ok';
+};
+
+
 Zotero.DBConnection.prototype.integrityCheck = Zotero.Promise.coroutine(function* () {
-	var ok = yield this.valueQueryAsync("PRAGMA integrity_check");
+	var ok = yield this.valueQueryAsync("PRAGMA integrity_check(1)");
 	return ok == 'ok';
 });
 
 
 Zotero.DBConnection.prototype.isCorruptionError = function (e) {
-	return e.message.includes(this.DB_CORRUPTION_STRING);
+	return this.DB_CORRUPTION_STRINGS.some(x => e.message.includes(x));
 };
 
 
@@ -875,6 +927,17 @@ Zotero.DBConnection.prototype.isCorruptionError = function (e) {
  */
 Zotero.DBConnection.prototype.closeDatabase = Zotero.Promise.coroutine(function* (permanent) {
 	if (this._connection) {
+		// TODO: Replace with automatic detection of likely improperly cached statements
+		// (multiple similar statements, "tmp_", embedded ids)
+		if (Zotero.isSourceBuild) {
+			try {
+				Zotero.debug("Cached DB statements: " + this.numCachedStatements());
+			}
+			catch (e) {
+				Zotero.logError(e, 1);
+			}
+		}
+		
 		Zotero.debug("Closing database");
 		this.closed = true;
 		yield this._connection.close();
@@ -1114,7 +1177,7 @@ Zotero.DBConnection.prototype._getConnectionAsync = async function (options) {
 	
 	try {
 		if (await OS.File.exists(corruptMarker)) {
-			throw new Error(this.DB_CORRUPTION_STRING);
+			throw new Error(this.DB_CORRUPTION_STRINGS[0]);
 		}
 		this._connection = await Zotero.Promise.resolve(this.Sqlite.openConnection({
 			path: file
@@ -1128,7 +1191,7 @@ Zotero.DBConnection.prototype._getConnectionAsync = async function (options) {
 		
 		Zotero.logError(e);
 		
-		if (e.message.includes(this.DB_CORRUPTION_STRING)) {
+		if (this.DB_CORRUPTION_STRINGS.some(x => e.message.includes(x))) {
 			await this._handleCorruptionMarker();
 		}
 		else {
@@ -1257,7 +1320,7 @@ Zotero.DBConnection.prototype._handleCorruptionMarker = async function () {
 		
 		Zotero.alert(
 			null,
-			Zotero.getString('startupError'),
+			Zotero.getString('startupError', Zotero.appName),
 			Zotero.getString(
 				'db.dbCorruptedNoBackup',
 				[Zotero.appName, fileName, OS.Path.basename(damagedFile)]

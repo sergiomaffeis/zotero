@@ -2,11 +2,14 @@
   "general_more": {
     "message": "Más…"
   },
+  "general_moreInfo": {
+    "message": "Más información..."
+  },
   "general_done": {
     "message": "Hecho"
   },
   "general_tryAgain": {
-    "message": "Prueba de nuevo"
+    "message": "Pruebe de nuevo"
   },
   "general_warning": {
     "message": "Advertencia"
@@ -16,6 +19,9 @@
   },
   "general_pleaseWait": {
     "message": "Por favor, espere..."
+  },
+  "general_copyToClipboard": {
+    "message": "Copiar al portapapeles"
   },
   "progressWindow_savingTo": {
     "message": "Guardando a"
@@ -33,7 +39,7 @@
     "message": "Ocurrió un error al guardar con $1. Intentando guardar usando $2 en su lugar."
   },
   "progressWindow_error_upgradeClient": {
-    "message": "Esta característica no está soportada por tu versión de $1. Por favor, actualiza a $2."
+    "message": "Esta característica no está soportada por su versión de $1. Por favor, actualice a $2."
   },
   "progressWindow_error_upgradeClient_latestVersion": {
     "message": "última versión"
@@ -48,13 +54,22 @@
     "message": "¿Está $1 en ejecución?"
   },
   "error_connection_save": {
-    "message": "El $1 fue habilitado para comunicar con la aplicación de escritorio de $2. El Conector puede guardar algunas páginas directamente en tu cuenta $3, pero para obtener mejores resultados debes asegurarte de que $2 está abierto antes de intentar guardar."
+    "message": "El $1 fue habilitado para comunicar con la aplicación de escritorio de $2. El Conector puede guardar algunas páginas directamente en su cuenta $3, pero para obtener mejores resultados debe asegurarse de que $2 está abierto antes de intentar guardar."
   },
   "error_connection_downloadOrTroubleshoot": {
     "message": "Puedes <a href=\"$1\">descargar $2</a> o <a href=\"$3\">solucionar problemas de la conexión</a> si es necesario."
   },
   "error_connection_enableSavingToOnlineLibrary": {
     "message": "Habilitar guardar en la biblioteca en línea"
+  },
+  "reports_report_submitted": {
+    "message": "Su informe de error ha sido enviado.\n\nIdentificador del informe: $1\n\nPor favor, publique un mensaje en los foros de Zotero con este identificador de informe, una descripción del problema y los pasos necesarios para reproducirlo.\n\nLos informes de error no se revisan a menos que se mencionen en los foros."
+  },
+  "reports_debug_output_submitted": {
+    "message": "Su salida de depuración ha sido enviada.\n\nEl identificador de depuración es $1."
+  },
+  "reports_submission_failed": {
+    "message": "Ocurrió un error al enviar su informe.\n\n$1\n\nPor favor, compruebe su conexión a Internet. Si el problema persiste, envíe un mensaje a los foros de Zotero."
   },
   "integration_error_clientUpgrade": {
     "message": "La citación basada en web requiere $1 o superior."
@@ -66,16 +81,28 @@
     "message": "Este documento contiene citas activas de Zotero que aparecerán como enlaces a zotero.org en la copia descargada."
   },
   "integration_googleDocs_unlinkBeforeSaving_instructions": {
-    "message": "Para generar una versión adecuada para compartir, selecciona <b>Hacer una copia... </b>desde el menú Archivo, selecciona <b>Desvincular citas </b>desde el menú de Zotero en el nuevo documento y luego descarga la versión no enlazada. Conserva este documento original vinculado en caso de que necesites realizar más cambios."
+    "message": "Para generar una versión adecuada para compartir, seleccione <b>Hacer una copia... </b>desde el menú Archivo, seleccione <b>Desvincular citas </b>desde el menú de Zotero en el nuevo documento y luego descargue la versión no enlazada. Conserve este documento original vinculado en caso de que necesite realizar más cambios."
   },
   "integration_googleDocs_unlinkBeforeSaving_downloadAnyway": {
     "message": "Descargar la versión enlazada de todos modos"
   },
   "integration_googleDocs_updating": {
-    "message": "$1 está actualizando tu documento."
+    "message": "$1 está actualizando su documento."
   },
   "integration_googleDocs_docxAlert": {
     "message": "La integración de $1 no está disponible cuando editas archivos .docx de Microsoft Word directamente en Google Docs. Elige Archivo → Guardar como Google Docs para habilitar esta funcionalidad.<br/><br/>Si quieres transferir un documento Word con citas  $1 a Google Docs, consulta <a href=\"https://www.zotero.org/support/kb/moving_documents_between_word_processors\">Mover documentos entre procesadores de texto</a>."
+  },
+  "integration_googleDocs_orphanedCitations_buttonTooltip": {
+    "message": "Mostar citas$1 desvinculadas"
+  },
+  "integration_googleDocs_orphanedCitations_alert": {
+    "message": "La cita que intenta editar se ha desvinculado de $1."
+  },
+  "integration_googleDocs_orphanedCitations_alertButton": {
+    "message": "Volver a enlazar cita"
+  },
+  "integration_googleDocs_orphanedCitations_disclaimer": {
+    "message": "Estas citas han quedado <a target=\"_blank\" href=\"https://www.zotero.org/support/kb/google_docs_citations_unlinked\">desvinculadas de $1</a>. Tendrá que volver a enlazarlas para que se actualicen o aparezcan en su bibliografía."
   },
   "general_saveTo": {
     "message": "Guardar a $1"

@@ -652,7 +652,7 @@
 					
 					for (var i=0; i<itemTypes.length; i++) {
 						var name = itemTypes[i].name;
-						if (name != 'attachment' && name != 'note') {
+						if (name != 'attachment' && name != 'note' && name != 'annotation') {
 							this.itemTypeMenu.appendItem(itemTypes[i].localized, itemTypes[i].id);
 						}
 					}
@@ -1440,8 +1440,8 @@
 						this._creatorCount--;
 						return;
 					}
-					this.item.removeCreator(index);
 					await this.blurOpenField();
+					this.item.removeCreator(index);
 					await this.item.saveTx();
 				}.bind(this))();
 				]]></body>
@@ -1824,6 +1824,8 @@
 					var elem;
 					var [field, creatorIndex, creatorField] = fieldName.split('-');
 					var newVal;
+
+					creatorIndex = parseInt(creatorIndex);
 					
 					// Creator fields
 					if (field == 'creator') {
